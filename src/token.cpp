@@ -10,6 +10,12 @@ string tokenName(TokenType type) {
     return "INTEGER";
   case ERROR:
     return "ERROR";
+  case ARITHMETIC_OP:
+    return "ARITHMETIC_OP";
+  case ASSIGNMENT_OP:
+    return "ASSIGNMENT_OP";
+  case DELIMITER:
+    return "DELIMITER";
   case END_OF_FILE:
     return "EOF";
   }

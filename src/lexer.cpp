@@ -98,6 +98,31 @@ Token Lexer::nextToken() {
     return scanInteger();
   }
 
+  // ARITHMETIC OPERATORS
+  if (c == '+' || c == '-' || c == '*' || c == '/') {
+    string lexeme(1, c);
+
+    advance();
+
+    return makeToken(ARITHMETIC_OP, lexeme, startLine, startColumn);
+  }
+
+  // =
+  if (c == '=') {
+    advance();
+
+    return makeToken(ASSIGNMENT_OP, "=", startLine, startColumn);
+  }
+
+  // DELIMITERS
+  if (c == '(' || c == ')' || c == '{' || c == '}' || c == ';' || c == ',') {
+    string lexeme(1, c);
+
+    advance();
+
+    return makeToken(DELIMITER, lexeme, startLine, startColumn);
+  }
+
   // Unknown character
   advance();
 

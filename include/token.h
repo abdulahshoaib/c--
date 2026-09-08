@@ -7,6 +7,12 @@ enum TokenType {
   INTEGER,
   ERROR,
 
+  ARITHMETIC_OP,
+
+  ASSIGNMENT_OP,
+
+  DELIMITER,
+
   END_OF_FILE
 };
 
