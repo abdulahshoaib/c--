@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <unordered_set>
 
 #include "token.h"
 
@@ -11,6 +12,9 @@ private:
   int line;
   int column;
 
+  std::unordered_set<std::string> keywords = {"int", "char", "if",    "else",
+                                              "in",  "out",  "while", "return"};
+
   char currentChar();
   void advance();
   void skipWhitespace();
@@ -20,6 +24,7 @@ private:
 
   Token scanID();
   Token scanInteger();
+  Token scanChar();
 
 public:
   Lexer(std::string input);

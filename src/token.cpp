@@ -8,6 +8,8 @@ string tokenName(TokenType type) {
     return "ID";
   case INTEGER:
     return "INTEGER";
+  case CHAR:
+    return "CHAR";
   case ERROR:
     return "ERROR";
   case ARITHMETIC_OP:
@@ -16,6 +18,8 @@ string tokenName(TokenType type) {
     return "ASSIGNMENT_OP";
   case DELIMITER:
     return "DELIMITER";
+  case KEYWORD:
+    return "KEYWORD";
   case END_OF_FILE:
     return "EOF";
   }

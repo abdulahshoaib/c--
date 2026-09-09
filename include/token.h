@@ -5,6 +5,7 @@
 enum TokenType {
   ID,
   INTEGER,
+  CHAR,
   ERROR,
 
   ARITHMETIC_OP,
@@ -12,6 +13,8 @@ enum TokenType {
   ASSIGNMENT_OP,
 
   DELIMITER,
+
+  KEYWORD,
 
   END_OF_FILE
 };

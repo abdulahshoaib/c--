@@ -36,7 +36,7 @@ Token Lexer::makeToken(TokenType type, string lexeme, int startLine,
   return {type, lexeme, startLine, startColumn};
 }
 
-// ID
+// ID or KEYWORD
 Token Lexer::scanID() {
   int startLine = line;
   int startColumn = column;
@@ -47,6 +47,10 @@ Token Lexer::scanID() {
          currentChar() == '_') {
     lexeme += currentChar();
     advance();
+  }
+
+  if (keywords.find(lexeme) != keywords.end()) {
+    return makeToken(KEYWORD, lexeme, startLine, startColumn);
   }
 
   return makeToken(ID, lexeme, startLine, startColumn);
@@ -65,6 +69,36 @@ Token Lexer::scanInteger() {
   }
 
   return makeToken(INTEGER, lexeme, startLine, startColumn);
+}
+
+// CHAR
+Token Lexer::scanChar() {
+  int startLine = line;
+  int startColumn = column;
+
+  string lexeme;
+
+  // Opening quote
+  lexeme += currentChar();
+  advance();
+
+  // Character
+  if (currentChar() == '\0' || currentChar() == '\n') {
+    return makeToken(ERROR, lexeme, startLine, startColumn);
+  }
+
+  lexeme += currentChar();
+  advance();
+
+  // Closing quote
+  if (currentChar() != '\'') {
+    return makeToken(ERROR, lexeme, startLine, startColumn);
+  }
+
+  lexeme += currentChar();
+  advance();
+
+  return makeToken(CHAR, lexeme, startLine, startColumn);
 }
 
 Lexer::Lexer(string input) {
@@ -88,7 +122,7 @@ Token Lexer::nextToken() {
 
   char c = currentChar();
 
-  // ID
+  // ID / KEYWORD
   if (isalpha(c) || c == '_') {
     return scanID();
   }
@@ -96,6 +130,11 @@ Token Lexer::nextToken() {
   // INTEGER
   if (isdigit(c)) {
     return scanInteger();
+  }
+
+  // CHAR
+  if (c == '\'') {
+    return scanChar();
   }
 
   // ARITHMETIC OPERATORS
