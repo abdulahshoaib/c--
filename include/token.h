@@ -10,6 +10,13 @@ enum TokenType {
 
   ARITHMETIC_OP,
 
+  LT,
+  LTE,
+  GT,
+  GTE,
+  EQ,
+  NEQ,
+
   ASSIGNMENT_OP,
 
   DELIMITER,

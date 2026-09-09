@@ -14,6 +14,18 @@ string tokenName(TokenType type) {
     return "ERROR";
   case ARITHMETIC_OP:
     return "ARITHMETIC_OP";
+  case LT:
+    return "RELATIONAL_OP_LT";
+  case LTE:
+    return "RELATIONAL_OP_LTE";
+  case GT:
+    return "RELATIONAL_OP_GT";
+  case GTE:
+    return "RELATIONAL_OP_GTE";
+  case EQ:
+    return "RELATIONAL_OP_EQ";
+  case NEQ:
+    return "RELATIONAL_OP_NEQ";
   case ASSIGNMENT_OP:
     return "ASSIGNMENT_OP";
   case DELIMITER:

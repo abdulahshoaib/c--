@@ -146,11 +146,56 @@ Token Lexer::nextToken() {
     return makeToken(ARITHMETIC_OP, lexeme, startLine, startColumn);
   }
 
-  // =
+  // < and <=
+  if (c == '<') {
+    advance();
+
+    if (currentChar() == '=') {
+      advance();
+
+      return makeToken(LTE, "<=", startLine, startColumn);
+    }
+
+    return makeToken(LT, "<", startLine, startColumn);
+  }
+
+  // > and >=
+  if (c == '>') {
+    advance();
+
+    if (currentChar() == '=') {
+      advance();
+
+      return makeToken(GTE, ">=", startLine, startColumn);
+    }
+
+    return makeToken(GT, ">", startLine, startColumn);
+  }
+
+  // = and ==
   if (c == '=') {
     advance();
 
+    if (currentChar() == '=') {
+      advance();
+
+      return makeToken(EQ, "==", startLine, startColumn);
+    }
+
     return makeToken(ASSIGNMENT_OP, "=", startLine, startColumn);
+  }
+
+  // !=
+  if (c == '!') {
+    advance();
+
+    if (currentChar() == '=') {
+      advance();
+
+      return makeToken(NEQ, "!=", startLine, startColumn);
+    }
+
+    return makeToken(ERROR, "!", startLine, startColumn);
   }
 
   // DELIMITERS
