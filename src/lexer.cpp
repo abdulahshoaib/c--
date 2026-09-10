@@ -1,6 +1,7 @@
 #include "lexer.h"
 
 #include <cctype>
+#include <iostream>
 
 using namespace std;
 
@@ -195,6 +196,9 @@ Token Lexer::nextToken() {
       return makeToken(NEQ, "!=", startLine, startColumn);
     }
 
+    cout << "Lexical Error at line " << startLine << ", column "
+         << startColumn << ": '!' must be followed by '='\n";
+
     return makeToken(ERROR, "!", startLine, startColumn);
   }
 
@@ -208,6 +212,8 @@ Token Lexer::nextToken() {
   }
 
   // Unknown character
+  cout << "Lexical Error at line " << startLine << ", column " << startColumn
+       << ": unknown character '" << c << "'\n";
   advance();
 
   return makeToken(ERROR, string(1, c), startLine, startColumn);
