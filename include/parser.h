@@ -1,0 +1,59 @@
+#pragma once
+
+#include <iostream>
+#include <string>
+
+#include "lexer.h"
+#include "token.h"
+
+struct SyntaxError {
+  std::string message;
+};
+
+class Parser {
+private:
+  Lexer &lexer;
+  Token tok;
+  int lastLine = 1;
+  bool verbose;
+  int depth = 0;
+
+  // Prints the parse tree as rules are entered (RAII handles indentation)
+  struct Rule {
+    Parser &p;
+    Rule(Parser &parser, const std::string &name) : p(parser) {
+      if (p.verbose)
+        std::cout << std::string(p.depth * 2, ' ') << name << "\n";
+      p.depth++;
+    }
+    ~Rule() { p.depth--; }
+  };
+
+  // token handling
+  void next();
+  void consume();
+  [[noreturn]] void fail(const std::string &expected);
+
+  // lookahead predicates
+  bool atKeyword(const std::string &k);
+  bool atDelim(char c);
+  bool atType();
+
+  // matching
+  void expectKeyword(const std::string &k);
+  void expectDelim(char c);
+  void expectID();
+
+  // grammar
+  void program();
+  void func();
+  void type();
+  void paramList();
+  void param();
+  void block();
+
+public:
+  Parser(Lexer &l, bool v = false);
+
+  void parse();
+};

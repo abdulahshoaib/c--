@@ -4,13 +4,13 @@
 #include <string>
 
 #include "lexer.h"
-#include "token.h"
+#include "parser.h"
 
 using namespace std;
 
 int main(int argc, char *argv[]) {
   if (argc < 2) {
-    cout << "Usage: lexer <source-file>\n";
+    cout << "Usage: parser <source-file> [-v]\n";
     return 1;
   }
 
@@ -23,12 +23,18 @@ int main(int argc, char *argv[]) {
   string source((istreambuf_iterator<char>(file)), istreambuf_iterator<char>());
   file.close();
 
-  Lexer lexer(source);
+  bool verbose = (argc > 2 && string(argv[2]) == "-v");
 
-  while (lexer.hasMoreTokens()) {
-    Token tok = lexer.nextToken();
-    cout << tokenName(tok.type) << " '" << tok.lexeme << "'\n";
+  Lexer lexer(source);
+  Parser parser(lexer, verbose);
+
+  try {
+    parser.parse();
+  } catch (const SyntaxError &e) {
+    cout << e.message << "\n";
+    return 1;
   }
 
+  cout << "Parsing completed successfully.\n";
   return 0;
 }

@@ -3,9 +3,9 @@ CXXFLAGS ?= -std=c++17 -Wall -Wextra -O2
 CPPFLAGS += -Iinclude
 
 BUILD := build
-BIN   := $(BUILD)/lexer
+BIN   := $(BUILD)/parser
 
-LIB_SRCS := src/token.cpp src/lexer.cpp
+LIB_SRCS := src/token.cpp src/lexer.cpp src/parser.cpp
 LIB_OBJS := $(LIB_SRCS:src/%.cpp=$(BUILD)/%.o)
 
 MAIN_OBJS := $(BUILD)/main.o
