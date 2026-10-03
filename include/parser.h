@@ -57,6 +57,8 @@ private:
   void param();
   void block();
   void stmt();
+  void varDecl();
+  void initOpt();
   void idStmt();
   void expr();
   void arith();

@@ -142,12 +142,37 @@ void Parser::block() {
 
 void Parser::stmt() {
   Rule r(*this, "Stmt");
-  if (tok.type == ID)
+  if (atType())
+    varDecl();
+  else if (tok.type == ID)
     idStmt();
   else if (atDelim('{'))
     block();
   else
     fail("statement");
+}
+
+// VarDecl -> Type ID InitOpt IdTail ;
+void Parser::varDecl() {
+  Rule r(*this, "VarDecl");
+  type();
+  expectID();
+  initOpt();
+  while (atDelim(',')) { // IdTail -> , ID InitOpt IdTail | ^
+    consume();
+    expectID();
+    initOpt();
+  }
+  expectDelim(';');
+}
+
+// InitOpt -> = Expr | ^
+void Parser::initOpt() {
+  if (tok.type == ASSIGNMENT_OP) {
+    Rule r(*this, "Init");
+    consume();
+    expr();
+  }
 }
 
 // IdStmt -> ID IdStmtRest ;   IdStmtRest -> = Expr | ( ArgList )
