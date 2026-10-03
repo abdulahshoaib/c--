@@ -38,6 +38,11 @@ private:
   bool atKeyword(const std::string &k);
   bool atDelim(char c);
   bool atType();
+  bool atRelop();
+  bool atAddOp();
+  bool atMulOp();
+  bool atExprStart();
+  bool atStmtStart();
 
   // matching
   void expectKeyword(const std::string &k);
@@ -51,6 +56,13 @@ private:
   void paramList();
   void param();
   void block();
+  void stmt();
+  void idStmt();
+  void expr();
+  void arith();
+  void term();
+  void factor();
+  void argList();
 
 public:
   Parser(Lexer &l, bool v = false);
