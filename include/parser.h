@@ -62,6 +62,9 @@ private:
   void idStmt();
   void ifStmt();
   void whileStmt();
+  void inStmt();
+  void outStmt();
+  void returnStmt();
   void expr();
   void arith();
   void term();

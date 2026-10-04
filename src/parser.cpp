@@ -61,7 +61,8 @@ bool Parser::atExprStart() {
 
 bool Parser::atStmtStart() {
   return atType() || tok.type == ID || atKeyword("if") ||
-         atKeyword("while") || atDelim('{');
+         atKeyword("while") || atKeyword("in") || atKeyword("out") ||
+         atKeyword("return") || atDelim('{');
 }
 
 // matching
@@ -151,6 +152,12 @@ void Parser::stmt() {
     ifStmt();
   else if (atKeyword("while"))
     whileStmt();
+  else if (atKeyword("in"))
+    inStmt();
+  else if (atKeyword("out"))
+    outStmt();
+  else if (atKeyword("return"))
+    returnStmt();
   else if (atDelim('{'))
     block();
   else
@@ -219,6 +226,31 @@ void Parser::whileStmt() {
   expr();
   expectDelim(')');
   stmt();
+}
+
+// InStmt -> in ID ;
+void Parser::inStmt() {
+  Rule r(*this, "InStmt");
+  expectKeyword("in");
+  expectID();
+  expectDelim(';');
+}
+
+// OutStmt -> out Expr ;
+void Parser::outStmt() {
+  Rule r(*this, "OutStmt");
+  expectKeyword("out");
+  expr();
+  expectDelim(';');
+}
+
+// ReturnStmt -> return ReturnVal ;   ReturnVal -> Expr | ^
+void Parser::returnStmt() {
+  Rule r(*this, "ReturnStmt");
+  expectKeyword("return");
+  if (atExprStart())
+    expr();
+  expectDelim(';');
 }
 
 // Expr -> Arith RelTail   RelTail -> relop Arith | ^
