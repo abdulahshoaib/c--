@@ -60,6 +60,8 @@ private:
   void varDecl();
   void initOpt();
   void idStmt();
+  void ifStmt();
+  void whileStmt();
   void expr();
   void arith();
   void term();

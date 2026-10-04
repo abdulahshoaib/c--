@@ -60,7 +60,8 @@ bool Parser::atExprStart() {
 }
 
 bool Parser::atStmtStart() {
-  return atType() || tok.type == ID || atDelim('{');
+  return atType() || tok.type == ID || atKeyword("if") ||
+         atKeyword("while") || atDelim('{');
 }
 
 // matching
@@ -146,6 +147,10 @@ void Parser::stmt() {
     varDecl();
   else if (tok.type == ID)
     idStmt();
+  else if (atKeyword("if"))
+    ifStmt();
+  else if (atKeyword("while"))
+    whileStmt();
   else if (atDelim('{'))
     block();
   else
@@ -190,6 +195,30 @@ void Parser::idStmt() {
     fail("'=' or '('");
   }
   expectDelim(';');
+}
+
+// IfStmt -> if ( Expr ) Stmt ElsePart   (else binds to nearest if)
+void Parser::ifStmt() {
+  Rule r(*this, "IfStmt");
+  expectKeyword("if");
+  expectDelim('(');
+  expr();
+  expectDelim(')');
+  stmt();
+  if (atKeyword("else")) {
+    consume();
+    stmt();
+  }
+}
+
+// WhileStmt -> while ( Expr ) Stmt
+void Parser::whileStmt() {
+  Rule r(*this, "WhileStmt");
+  expectKeyword("while");
+  expectDelim('(');
+  expr();
+  expectDelim(')');
+  stmt();
 }
 
 // Expr -> Arith RelTail   RelTail -> relop Arith | ^
