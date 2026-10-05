@@ -32,9 +32,9 @@
 }
 
 \title{The Evolution of a C-- Compiler\\[0.35em]
-       \large Part I --- The Lexical Analyzer}
+       \large Lexical Analyzer (A1) and Recursive-Descent Parser (A2)}
 \author{Abdullah Shoaib\\ \small 23L-0569}
-\date{10 September 2026}
+\date{5 October 2026}
 
 \begin{document}
 \maketitle
@@ -43,7 +43,9 @@
 This report follows the construction of a compiler front end for
 \textsf{C--}, a small subset of C++. Part~I covers the lexical analyzer: the token classes, the regular definitions of the complex
 tokens, a transition diagram that recognizes every token of the language,
-and the notes that go with the implementation.
+and the notes that go with the implementation. Part~II covers the parser: a context-free grammar for \textsf{C--}, its LL(1) form, and a
+recursive-descent implementation that reuses the lexer. The closing section
+traces how the source tree grew from the lexer to the parser.
 \end{abstract}
 
 \tableofcontents
@@ -228,12 +230,186 @@ starts. The interesting methods are the ones for the multi-lexeme tokens:
 unknown character and a stray \texttt{!} that is not followed by \texttt{=}.
 
 % =====================================================================
-\section{Status and next steps}
+\section{Syntax Analysis}
 % =====================================================================
-The lexical analyzer is complete: it turns a \textsf{C--} source file into a
-stream of typed tokens and reports lexical errors with their position.
-The next stage builds the parser on top of this token stream, starting
-from a context-free grammar for \textsf{C--} and turning it into a
-recursive-descent recognizer.
+The parser reuses the lexer of Part~I unchanged: it pulls one token at a
+time from the same \texttt{Lexer} object and decides which production to
+apply. Every decision can be made from the next single token, so a
+recursive-descent parser is a direct transcription of the grammar with one
+function per nonterminal.
+
+\subsection{A context-free grammar for \textsf{C--}}
+\begin{align*}
+\textit{Program}    &\to \textit{FuncList}\\
+\textit{FuncList}   &\to \textit{Func}\ \textit{FuncList} \mid \varepsilon\\
+\textit{Func}       &\to \textit{Type}\ \texttt{ID}\ \texttt{(}\ \textit{ParamList}\ \texttt{)}\ \textit{Block}\\
+\textit{Type}       &\to \texttt{int} \mid \texttt{char}\\
+\textit{ParamList}  &\to \textit{Param}\ \textit{ParamTail} \mid \varepsilon\\
+\textit{ParamTail}  &\to \texttt{,}\ \textit{Param}\ \textit{ParamTail} \mid \varepsilon\\
+\textit{Param}      &\to \textit{Type}\ \texttt{ID}\\
+\textit{Block}      &\to \texttt{\{}\ \textit{StmtList}\ \texttt{\}}\\
+\textit{StmtList}   &\to \textit{Stmt}\ \textit{StmtList} \mid \varepsilon\\
+\textit{Stmt}       &\to \textit{VarDecl} \mid \textit{IdStmt} \mid \textit{IfStmt} \mid \textit{WhileStmt}\\
+                    &\quad\mid \textit{InStmt} \mid \textit{OutStmt} \mid \textit{ReturnStmt} \mid \textit{Block}\\
+\textit{VarDecl}    &\to \textit{Type}\ \texttt{ID}\ \textit{InitOpt}\ \textit{IdTail}\ \texttt{;}\\
+\textit{IdTail}     &\to \texttt{,}\ \texttt{ID}\ \textit{InitOpt}\ \textit{IdTail} \mid \varepsilon\\
+\textit{InitOpt}    &\to \texttt{=}\ \textit{Expr} \mid \varepsilon\\
+\textit{IdStmt}     &\to \texttt{ID}\ \textit{IdStmtRest}\ \texttt{;}\\
+\textit{IdStmtRest} &\to \texttt{=}\ \textit{Expr} \mid \texttt{(}\ \textit{ArgList}\ \texttt{)}\\
+\textit{IfStmt}     &\to \texttt{if}\ \texttt{(}\ \textit{Expr}\ \texttt{)}\ \textit{Stmt}\ \textit{ElsePart}\\
+\textit{ElsePart}   &\to \texttt{else}\ \textit{Stmt} \mid \varepsilon\\
+\textit{WhileStmt}  &\to \texttt{while}\ \texttt{(}\ \textit{Expr}\ \texttt{)}\ \textit{Stmt}\\
+\textit{InStmt}     &\to \texttt{in}\ \texttt{ID}\ \texttt{;}\\
+\textit{OutStmt}    &\to \texttt{out}\ \textit{Expr}\ \texttt{;}\\
+\textit{ReturnStmt} &\to \texttt{return}\ \textit{ReturnVal}\ \texttt{;}\\
+\textit{ReturnVal}  &\to \textit{Expr} \mid \varepsilon\\
+\textit{Expr}       &\to \textit{Arith}\ \textit{RelTail}\\
+\textit{RelTail}    &\to \textit{relop}\ \textit{Arith} \mid \varepsilon\\
+\textit{Arith}      &\to \textit{Term}\ \textit{ArithTail}\\
+\textit{ArithTail}  &\to \textit{addop}\ \textit{Term}\ \textit{ArithTail} \mid \varepsilon\\
+\textit{Term}       &\to \textit{Factor}\ \textit{TermTail}\\
+\textit{TermTail}   &\to \textit{mulop}\ \textit{Factor}\ \textit{TermTail} \mid \varepsilon\\
+\textit{Factor}     &\to \texttt{ID}\ \textit{FactorRest} \mid \texttt{integer} \mid \texttt{char}\\
+                    &\quad\mid \texttt{(}\ \textit{Expr}\ \texttt{)} \mid \texttt{-}\ \textit{Factor}\\
+\textit{FactorRest} &\to \texttt{(}\ \textit{ArgList}\ \texttt{)} \mid \varepsilon\\
+\textit{ArgList}    &\to \textit{Expr}\ \textit{ArgTail} \mid \varepsilon\\
+\textit{ArgTail}    &\to \texttt{,}\ \textit{Expr}\ \textit{ArgTail} \mid \varepsilon
+\end{align*}
+
+\subsection{Making the grammar LL(1)}
+The grammar above is already LL(1). Two design choices are responsible:
+
+\begin{itemize}
+  \item \textbf{No left recursion.} Repetition is written with right-recursive
+        \emph{tail} nonterminals (\textit{FuncList}, \textit{StmtList},
+        \textit{ArithTail}, \ldots), which a recursive-descent parser turns
+        into a simple \texttt{while} loop.
+  \item \textbf{Disjoint alternatives.} The alternatives of every rule have
+        disjoint FIRST sets, so the next token alone selects the production.
+        The only shared prefix, an identifier at the start of
+        \textit{IdStmt} and \textit{Factor}, is resolved a token later in
+        \textit{IdStmtRest} and \textit{FactorRest}.
+\end{itemize}
+
+\noindent
+FIRST and FOLLOW (abbreviated):
+
+\begin{center}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Nonterminal} & \textbf{FIRST} & \textbf{FOLLOW}\\
+\midrule
+\textit{Program}    & \texttt{int}, \texttt{char}                        & \texttt{\$}\\
+\textit{FuncList}   & \texttt{int}, \texttt{char}, $\varepsilon$         & \texttt{\$}\\
+\textit{Func}       & \texttt{int}, \texttt{char}                        & \texttt{int}, \texttt{char}, \texttt{\$}\\
+\textit{Type}       & \texttt{int}, \texttt{char}                        & \texttt{ID}\\
+\textit{ParamList}  & \texttt{int}, \texttt{char}, $\varepsilon$         & \texttt{)}\\
+\textit{Param}      & \texttt{int}, \texttt{char}                        & \texttt{,}, \texttt{)}\\
+\textit{Block}      & \texttt{\{}                                        & \textit{FIRST}(\textit{Stmt}), \texttt{\}}\\
+\textit{Stmt}       & \texttt{int}, \texttt{char}, \texttt{ID}, \texttt{if},
+                      \texttt{while}, \texttt{in}, \texttt{out}, \texttt{return}, \texttt{\{} &
+                      \textit{FIRST}(\textit{Stmt}), \texttt{\}}\\
+\textit{InitOpt}    & \texttt{=}, $\varepsilon$                          & \texttt{,}, \texttt{;}\\
+\textit{Expr}       & \texttt{ID}, \texttt{integer}, \texttt{char}, \texttt{(}, \texttt{-} & \texttt{)}, \texttt{;}, \texttt{,}\\
+\textit{ArithTail}  & \textit{addop}, $\varepsilon$                      & \textit{relop}, \texttt{)}, \texttt{;}, \texttt{,}\\
+\textit{ArgList}    & \texttt{ID}, \texttt{integer}, \texttt{char}, \texttt{(}, \texttt{-}, $\varepsilon$ & \texttt{)}\\
+\textit{ArgTail}    & \texttt{,}, $\varepsilon$                          & \texttt{)}\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent
+An excerpt of the resulting LL(1) parsing table; a blank cell is an error
+entry:
+
+\begin{center}
+\begin{tabular}{@{}lcccccc@{}}
+\toprule
+ & \texttt{int}/\texttt{char} & \texttt{ID} & \texttt{if} & \texttt{while} & \texttt{\{} & \texttt{\$}\\
+\midrule
+\textit{Program}   & \textit{FuncList} &      &          &           &      & \\
+\textit{FuncList}  & \textit{Func}     &      &          &           &      & $\varepsilon$\\
+\textit{Func}      & $\mathit{Type}\ \texttt{ID}\ \texttt{(}\ \mathit{ParamList}\ \texttt{)}\ \mathit{Block}$ & & & & & \\
+\textit{Stmt}      & \textit{VarDecl}  & \textit{IdStmt} & \textit{IfStmt} & \textit{WhileStmt} & \textit{Block} & \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Recursive descent}
+Each nonterminal becomes one method of the \texttt{Parser} class, and each
+right-recursive tail becomes a loop. Because the alternatives are disjoint,
+the methods read like the grammar itself. The statement dispatcher is a good
+example:
+
+\begin{lstlisting}
+void stmt() {
+  if (atType())            varDecl();
+  else if (tok.type == ID) idStmt();
+  else if (atKeyword("if"))    ifStmt();
+  else if (atKeyword("while")) whileStmt();
+  else if (atKeyword("in"))    inStmt();
+  else if (atKeyword("out"))   outStmt();
+  else if (atKeyword("return")) returnStmt();
+  else if (atDelim('{'))   block();
+  else                     fail("statement");
+}
+\end{lstlisting}
+
+\noindent
+The parser keeps a single lookahead token \texttt{tok}; it can also print the
+parse tree as it descends, which is how the tests are checked. On failure it
+throws a \texttt{SyntaxError} carrying the line and column of the offending
+token, so the driver can report a diagnostic and exit with a non-zero status.
+Two details deserve a mention:
+
+\begin{itemize}
+  \item the \emph{dangling else} is handled the natural LL(1) way ---
+        \textit{ElsePart} is entered only when the next token is
+        \texttt{else}, so an \texttt{else} always binds to the nearest
+        \texttt{if} (as in C and C++);
+  \item a unary minus is folded into \textit{Factor}, which is why
+        \texttt{-x} and \texttt{-(y * 2)} parse without a separate rule.
+\end{itemize}
+
+% =====================================================================
+\section{How the codebase evolved}
+% =====================================================================
+The work was committed as it happened, so the history is the story of the
+project. The lexer was built first (September), then the parser was added on
+top of it (October); the two milestones are tagged \texttt{lexer} and
+\texttt{parser}.
+
+The code is split into small modules. Token types and the \texttt{Lexer}
+live behind \texttt{include/token.h} and \texttt{include/lexer.h} (defined in
+\texttt{src/token.cpp} and \texttt{src/lexer.cpp}); the parser lives behind
+\texttt{include/parser.h} (defined in \texttt{src/parser.cpp}); and
+\texttt{src/main.cpp} is the command-line driver. The \texttt{Makefile}
+builds the parser and runs the tests, which live under \texttt{tests/}.
+
+\begin{center}
+\begin{tabular}{@{}p{2.3cm}p{6.2cm}p{5.0cm}@{}}
+\toprule
+\textbf{Date} & \textbf{What changed} & \textbf{Representative commit}\\
+\midrule
+8 Sep 2026 & project scaffold; operators and delimiters & \texttt{chore: initialize \ldots}, \texttt{feat(lexer): \ldots}\\
+9 Sep 2026 & keywords, character literals, relational operators & \texttt{feat(lexer): classify keywords \ldots}\\
+10 Sep 2026 & lexical error reporting; sample input; write-up v1; \texttt{lexer} & \texttt{feat(lexer): report lexical errors \ldots}\\
+2 Oct 2026 & recursive-descent skeleton (functions, parameters, blocks) & \texttt{feat(parser): add \ldots skeleton}\\
+3 Oct 2026 & expressions, store statements/calls, declarations & \texttt{feat(parser): parse expressions \ldots}\\
+4 Oct 2026 & \texttt{if}/\texttt{else}, \texttt{while}, \texttt{in}/\texttt{out}/\texttt{return} & \texttt{feat(parser): parse in, out and return \ldots}\\
+5 Oct 2026 & full test program; write-up v2; \texttt{parser} & \texttt{test: add a C-- program \ldots}\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent
+Through the whole second phase the lexer was never rewritten: the parser
+simply consumes the token stream it produces. That is exactly the layering
+the two stages are meant to demonstrate ---
+
+\begin{center}
+source text $\xrightarrow{\ \text{lexer}\ }$ tokens
+$\xrightarrow{\ \text{recursive-descent parser}\ }$ parse tree / diagnostics.
+\end{center}
 
 \end{document}
