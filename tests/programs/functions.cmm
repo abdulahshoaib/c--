@@ -1,0 +1,15 @@
+int add(int a, int b) {
+  return a + b;
+}
+
+char first(char c) {
+  return c;
+}
+
+int noParams() {
+  return 42;
+}
+
+int voidLike(int x) {
+  return;
+}

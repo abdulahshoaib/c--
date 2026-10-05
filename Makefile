@@ -10,12 +10,12 @@ LIB_OBJS := $(LIB_SRCS:src/%.cpp=$(BUILD)/%.o)
 
 MAIN_OBJS := $(BUILD)/main.o
 
-UNIT_BINS := $(BUILD)/test_lexer
+UNIT_BINS := $(BUILD)/test_lexer $(BUILD)/test_parser
 UNIT_OBJS := $(UNIT_BINS:=.o)
 
 DEPS := $(LIB_OBJS:.o=.d) $(MAIN_OBJS:.o=.d) $(UNIT_OBJS:.o=.d)
 
-.PHONY: all test unit clean
+.PHONY: all test unit programs clean
 .SECONDARY:
 
 all: $(BIN)
@@ -38,7 +38,10 @@ $(BUILD):
 unit: $(UNIT_BINS)
 	@set -e; for t in $(UNIT_BINS); do echo "== $$t"; ./$$t; done
 
-test: unit
+programs: $(BIN)
+	@tests/run_programs.sh $(BIN)
+
+test: unit programs
 
 clean:
 	rm -rf $(BUILD)
