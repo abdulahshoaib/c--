@@ -11,7 +11,6 @@ a.out
 *.log
 *.toc
 *.synctex.gz
-*.pdf
 
 # Editors / tooling
 .commandcode/
